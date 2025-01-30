@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Digital Clock with Location</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f5f5f5;
+            color: #333;
+            flex-direction: column;
+            margin: 0;
+            overflow: hidden;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        /* Dark Mode Styles */
+        body.dark-mode {
+            background-color: #333;
+            color: #fff;
+        }
+
+        /* Header and Buttons */
+        header {
+            width: 100%;
+            padding: 15px 30px;
+            background-color: #0ed1a0;
+            display: flex;
+            justify-content: flex-start;
+            gap: 15px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 10;
+            transition: top 0.3s;
+        }
+
+        .header-button {
+            padding: 12px 20px;
+            font-size: 1.2em;
+            color: white;
+            background: linear-gradient(145deg, #5da07e, #77cca1);
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.3s ease, background 0.3s;
+        }
+
+        .header-button:hover {
+            transform: scale(1.1);
+            background: linear-gradient(145deg, #003f7f, #0056b3);
+        }
+
+        .container {
+            display: flex;
+            align-items: center;
+            flex-direction: row;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .week-days {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            font-size: 2.2em;
+            margin-right: 40px;
+            text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.3);
+        }
+
+        .clock-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+
+        .clock {
+            display: flex;
+            align-items: baseline;
+            font-weight: bold;
+            text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.3);
+        }
+
+        .hours, .minutes, .colon {
+            font-size: 9em;
+            font-weight: 800;
+            text-align: center;
+            display: inline-block;
+            vertical-align: middle;
+        }
+
+        .seconds {
+            font-size: 5em;
+            font-weight: 500;
+            color: #999;
+        }
+
+        .ampm {
+            font-size: 3em;
+            font-weight: 600;
+            text-align: center;
+            color: #f54242;
+        }
+
+        .separator {
+            width: 12px;
+            height: 170px;
+            background-color: #333;
+            margin: 0 50px;
+            box-shadow: 3px 0 15px rgba(0, 0, 0, 0.5);
+        }
+
+        .day {
+            color: #666;
+        }
+
+        .current-day {
+            color: #000;
+            font-weight: bold;
+        }
+
+        /* Settings Modal */
+        .settings {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.6);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .settings-content {
+            background-color: #fff;
+            padding: 35px;
+            border-radius: 12px;
+            width: 400px;
+            text-align: center;
+            box-shadow: 0 4px 25px rgba(0, 0, 0, 0.2);
+        }
+
+        .settings h3 {
+            margin-bottom: 25px;
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #007bff;
+        }
+
+        .settings label {
+            display: block;
+            margin: 18px 0;
+            font-size: 1.2em;
+            color: #555;
+        }
+
+        .settings input, .settings select {
+            width: 100%;
+            padding: 12px;
+            margin-top: 6px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            font-size: 1.2em;
+            transition: all 0.3s ease;
+        }
+
+        .settings input:hover, .settings select:hover {
+            border-color: #007bff;
+            background-color: #f1f1f1;
+        }
+
+        .close-button {
+            margin-top: 18px;
+            background-color: #d9534f;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .close-button:hover {
+            background-color: #c9302c;
+        }
+
+        /* Footer */
+        footer {
+            margin-top: 2px;
+            padding: 5px;
+            text-align: center;
+            background-color: #0ed1a0;
+            color: white;
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+        }
+
+        footer .contact-info {
+            font-size: 0.5em;
+        }
+
+        /* Fullscreen specific styles */
+        body.fullscreen header, body.fullscreen footer {
+            display: none;
+        }
+
+        /* Fullscreen Exit Button */
+        #exit-button {
+            display: none;
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background-color: red;
+            color: white;
+            padding: 15px;
+            border-radius: 10%;
+            cursor: pointer;
+            z-index: 1000;
+        }
+
+    </style>
+</head>
+<body>
+    <header>
+        <!-- Dark Mode Button (Icon Only) -->
+        <button class="header-button" onclick="toggleMode()">
+            <i id="mode-icon" class="fas fa-moon"></i>
+        </button>
+        <!-- Settings Button -->
+        <button class="header-button" onclick="openSettings()">
+            <i class="fas fa-cogs"></i>
+        </button>
+        <!-- Where Am I Button -->
+        <button class="header-button" onclick="getLocation()">
+            <i class="fas fa-location-arrow"></i>
+        </button>
+        <!-- Auto-hide Header Toggle Button -->
+        <button id="auto-hide-button" class="header-button" onclick="toggleAutoHide()">
+            <i class="fas fa-arrows-alt-v"></i>
+        </button>
+        <button class="header-button" onclick="toggleFullScreen()">
+            <i class="fas fa-expand"></i>
+        </button>
+    </header>
+
+    <div class="container">
+        <div class="week-days" id="week-days"></div>
+        <div class="separator"></div>
+        <div class="clock-container">
+            <div class="clock">
+                <span class="hours" id="hours"></span>
+                <span class="colon">:</span>
+                <span class="minutes" id="minutes"></span>
+                <span class="colon">:</span>
+                <span class="seconds" id="seconds"></span>
+                <span class="ampm" id="ampm"></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="location" id="location"></div>
+
+    <div class="settings" id="settings">
+        <div class="settings-content">
+            <h3>Settings</h3>
+            <label>Font Size (1.0 to 1.9): 
+                <input type="number" id="fontSizeInput" value="1.0" step="0.1" min="1.0" max="1.9" onchange="changeFontSize()">
+                <span>em</span>
+            </label>
+            <label>Font Family:
+                <select id="fontFamilySelect" onchange="changeFontFamily()">
+                    <option value="Arial">Arial</option>
+                    <option value="Verdana">Verdana</option>
+                    <option value="Times New Roman">Times New Roman</option>
+                    <option value="Courier New">Courier New</option>
+                    <option value="Georgia">Georgia</option>
+                    <option value="Tahoma">Tahoma</option>
+                    <option value="Impact">Impact</option>
+                    <option value="Roboto">Roboto</option>
+                    <option value="Comic Sans MS">Comic Sans MS</option>
+                    <option value="Trebuchet MS">Trebuchet MS</option>
+                    <option value="Consolas">Consolas</option>
+                    <option value="Palatino">Palatino</option>
+                    <option value="Garamond">Garamond</option>
+                    <option value="Courier">Courier</option>
+                    <option value="Lucida Console">Lucida Console</option>
+                    <option value="Comic Sans">Comic Sans</option>
+                    <option value="Frank Ruhl Libre">Frank Ruhl Libre</option>
+                    <option value="Ubuntu">Ubuntu</option>
+                    <option value="Open Sans">Open Sans</option>
+                    <option value="Lobster">Lobster</option>
+                </select>
+            </label>
+            <button class="close-button" onclick="closeSettings()">Close</button>
+        </div>
+    </div>
+
+    <footer>
+        <p>&copy; 2025 Shuvo Hossain. All rights reserved.</p>
+        <div class="contact-info">
+            <p>Email: Shuvoislam2025@gmail.com | Phone: +8801796949177</p>
+        </div>
+    </footer>
+
+    <!-- Exit Fullscreen Button -->
+    <div id="exit-button" onclick="exitFullScreen()">Exit Fullscreen</div>
+
+    <script>
+        let lastScrollTop = 0;
+        let isAutoHideEnabled = true; // Track if auto-hide is enabled
+
+        function updateClock() {
+            const now = new Date();
+            let hours = now.getHours();
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+            let ampm = 'AM';
+
+            if (hours >= 12) {
+                ampm = 'PM';
+                if (hours > 12) hours -= 12;
+            }
+            document.getElementById('hours').textContent = String(hours).padStart(2, '0');
+            document.getElementById('minutes').textContent = minutes;
+            document.getElementById('seconds').textContent = seconds;
+            document.getElementById('ampm').textContent = ampm;
+
+            updateWeekDays(now);
+        }
+
+        function updateWeekDays(date) {
+            const weekDays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+            const today = date.getDay();
+            let html = '';
+            weekDays.forEach((day, index) => {
+                if (index === today) {
+                    html += `<div class="day current-day">${day}</div>`;
+                } else {
+                    html += `<div class="day">${day}</div>`;
+                }
+            });
+            document.getElementById('week-days').innerHTML = html;
+        }
+
+        // Auto hide header on scroll
+        window.addEventListener("scroll", function() {
+            if (!isAutoHideEnabled) return; // Do nothing if auto-hide is disabled
+
+            let scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+            if (scrollTop > lastScrollTop) {
+                document.querySelector("header").style.top = "-80px"; // Hide header
+            } else {
+                document.querySelector("header").style.top = "0"; // Show header
+            }
+            lastScrollTop = scrollTop <= 0 ? 0 : scrollTop;
+        });
+
+        function toggleMode() {
+            document.body.classList.toggle('dark-mode');
+            const icon = document.getElementById('mode-icon');
+            if (document.body.classList.contains('dark-mode')) {
+                icon.classList.remove('fa-moon');
+                icon.classList.add('fa-sun');
+            } else {
+                icon.classList.remove('fa-sun');
+                icon.classList.add('fa-moon');
+            }
+        }
+
+        function openSettings() {
+            document.getElementById('settings').style.display = 'flex';
+        }
+
+        function closeSettings() {
+            document.getElementById('settings').style.display = 'none';
+        }
+
+        function changeFontSize() {
+            const fontSize = parseFloat(document.getElementById('fontSizeInput').value);
+            document.body.style.fontSize = fontSize + 'em';
+        }
+
+        function changeFontFamily() {
+            const fontFamily = document.getElementById('fontFamilySelect').value;
+            document.body.style.fontFamily = fontFamily;
+        }
+
+        function getLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(function(position) {
+                    const latitude = position.coords.latitude;
+                    const longitude = position.coords.longitude;
+                    document.getElementById('location').textContent = `Location: Latitude: ${latitude}, Longitude: ${longitude}`;
+                });
+            } else {
+                document.getElementById('location').textContent = "Geolocation is not supported by this browser.";
+            }
+        }
+
+        function toggleAutoHide() {
+            isAutoHideEnabled = !isAutoHideEnabled;
+            const autoHideButton = document.getElementById('auto-hide-button');
+            if (isAutoHideEnabled) {
+                autoHideButton.innerHTML = '<i class="fas fa-arrows-alt-v"></i>'; // Show icon
+            } else {
+                autoHideButton.innerHTML = '<i class="fas fa-pause"></i>'; // Pause icon
+            }
+        }
+
+        function toggleFullScreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+                document.body.classList.add('fullscreen');
+                document.getElementById('exit-button').style.display = 'block'; // Show exit button
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                    document.body.classList.remove('fullscreen');
+                    document.getElementById('exit-button').style.display = 'none'; // Hide exit button
+                }
+            }
+        }
+
+        function exitFullScreen() {
+            if (document.exitFullscreen) {
+                document.exitFullscreen();
+                document.body.classList.remove('fullscreen');
+                document.getElementById('exit-button').style.display = 'none'; // Hide exit button
+            }
+        }
+
+        setInterval(updateClock, 1000);
+    </script>
+</body>
+</html>
